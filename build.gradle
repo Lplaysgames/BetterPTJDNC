@@ -45,6 +45,7 @@ configurations.configureEach {
 
 dependencies {
     // Paper API
+    // https://jd.papermc.io/paper/1.20/
     compileOnly group: 'io.papermc.paper', name: 'paper-api', version: "${minecraftVersion}-R0.1-SNAPSHOT"
 
     // Folia API
