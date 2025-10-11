@@ -1,10 +1,11 @@
 main: org.crayne.ptjdnc.NameColorPlugin
-name: PTJDNC
-version: ${project.version}
+name: PlaytimeJoindateNameColor
+version: @VERSION@
+description: @DESCRIPTION@
 api-version: 1.20
-description: ${project.description}
 authors: [ crayne, bierdosenhalter ]
 depend: [ DonationAPI ]
+folia-supported: true
 
 commands:
   namecolor:

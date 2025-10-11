@@ -1,5 +1,6 @@
 package org.crayne.ptjdnc;
 
+import com.tcoded.folialib.FoliaLib;
 import org.apache.commons.lang3.StringUtils;
 import org.bukkit.Bukkit;
 import org.bukkit.command.PluginCommand;
@@ -25,6 +26,8 @@ public class NameColorPlugin extends JavaPlugin {
 
     @NotNull
     private final Map<UUID, Boolean> previousOpValues = new HashMap<>();
+
+    FoliaLib foliaLib = new FoliaLib(this);
 
     public void onEnable() {
         plugin = this;
@@ -91,20 +94,8 @@ public class NameColorPlugin extends JavaPlugin {
 
     private void registerPlayerOpEventTimerTask() {
         // probably not the best solution for a player op event, but atleast it works? spigot or paper, please add an op event :sob:
-        Bukkit.getScheduler().runTaskTimerAsynchronously(this, () -> {
-            final Collection<? extends Player> onlinePlayers = Bukkit.getOnlinePlayers();
-            onlinePlayers.forEach(p -> previousOpValues.putIfAbsent(p.getUniqueId(), p.isOp()));
-
-            final Map<UUID, Boolean> difference = new HashMap<>();
-
-            onlinePlayers.forEach(player -> {
-                final UUID uuid = player.getUniqueId();
-                final boolean wasOp = previousOpValues.get(uuid);
-                if (player.isOp() != wasOp) {
-                    difference.put(uuid, wasOp);
-                    previousOpValues.put(uuid, player.isOp());
-                }
-            });
+        foliaLib.getScheduler().runTimerAsync(() -> {
+            final Map<UUID, Boolean> difference = getUuidBooleanMap();
 
             difference.forEach((uuid, wasOp) -> {
                 final Player player = Bukkit.getPlayer(uuid);
@@ -114,6 +105,23 @@ public class NameColorPlugin extends JavaPlugin {
                 Bukkit.getPluginManager().callEvent(opStatusChangeEvent);
             });
         }, 20L, 20L);
+    }
+
+    private @NotNull Map<UUID, Boolean> getUuidBooleanMap() {
+        final Collection<? extends Player> onlinePlayers = Bukkit.getOnlinePlayers();
+        onlinePlayers.forEach(p -> previousOpValues.putIfAbsent(p.getUniqueId(), p.isOp()));
+
+        final Map<UUID, Boolean> difference = new HashMap<>();
+
+        onlinePlayers.forEach(player -> {
+            final UUID uuid = player.getUniqueId();
+            final boolean wasOp = previousOpValues.get(uuid);
+            if (player.isOp() != wasOp) {
+                difference.put(uuid, wasOp);
+                previousOpValues.put(uuid, player.isOp());
+            }
+        });
+        return difference;
     }
 
     @NotNull
