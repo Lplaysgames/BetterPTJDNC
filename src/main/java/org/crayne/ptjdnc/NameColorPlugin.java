@@ -1,6 +1,5 @@
 package org.crayne.ptjdnc;
 
-import com.tcoded.folialib.FoliaLib;
 import org.apache.commons.lang3.StringUtils;
 import org.bukkit.Bukkit;
 import org.bukkit.command.PluginCommand;
@@ -27,8 +26,7 @@ public class NameColorPlugin extends JavaPlugin {
     @NotNull
     private final Map<UUID, Boolean> previousOpValues = new HashMap<>();
 
-    FoliaLib foliaLib = new FoliaLib(this);
-
+    @Override
     public void onEnable() {
         plugin = this;
 
@@ -42,6 +40,7 @@ public class NameColorPlugin extends JavaPlugin {
         registerPlayerOpEventTimerTask();
     }
 
+    @Override
     public void onDisable() {
         GlobalNameStyleProfile.INSTANCE.save();
     }
@@ -93,35 +92,40 @@ public class NameColorPlugin extends JavaPlugin {
     }
 
     private void registerPlayerOpEventTimerTask() {
-        // probably not the best solution for a player op event, but atleast it works? spigot or paper, please add an op event :sob:
-        foliaLib.getScheduler().runTimerAsync(() -> {
-            final Map<UUID, Boolean> difference = getUuidBooleanMap();
+        // Folia-compatible scheduled task
+        for (var world : getServer().getWorlds()) {
+            getServer().getRegionScheduler().runAtFixedRate(
+                    this,
+                    world,   // world
+                    0, 0,    // chunk X and Z
+                    scheduledTask -> {
+                        final Collection<? extends Player> onlinePlayers = Bukkit.getOnlinePlayers();
+                        onlinePlayers.forEach(p -> previousOpValues.putIfAbsent(p.getUniqueId(), p.isOp()));
 
-            difference.forEach((uuid, wasOp) -> {
-                final Player player = Bukkit.getPlayer(uuid);
-                if (player == null) return;
+                        final Map<UUID, Boolean> difference = new HashMap<>();
 
-                final PlayerOpStatusChangeEvent opStatusChangeEvent = new PlayerOpStatusChangeEvent(player, wasOp, player.isOp(), true);
-                Bukkit.getPluginManager().callEvent(opStatusChangeEvent);
-            });
-        }, 20L, 20L);
-    }
+                        onlinePlayers.forEach(player -> {
+                            final UUID uuid = player.getUniqueId();
+                            final boolean wasOp = previousOpValues.get(uuid);
+                            if (player.isOp() != wasOp) {
+                                difference.put(uuid, wasOp);
+                                previousOpValues.put(uuid, player.isOp());
+                            }
+                        });
 
-    private @NotNull Map<UUID, Boolean> getUuidBooleanMap() {
-        final Collection<? extends Player> onlinePlayers = Bukkit.getOnlinePlayers();
-        onlinePlayers.forEach(p -> previousOpValues.putIfAbsent(p.getUniqueId(), p.isOp()));
+                        difference.forEach((uuid, wasOp) -> {
+                            final Player player = Bukkit.getPlayer(uuid);
+                            if (player == null) return;
 
-        final Map<UUID, Boolean> difference = new HashMap<>();
-
-        onlinePlayers.forEach(player -> {
-            final UUID uuid = player.getUniqueId();
-            final boolean wasOp = previousOpValues.get(uuid);
-            if (player.isOp() != wasOp) {
-                difference.put(uuid, wasOp);
-                previousOpValues.put(uuid, player.isOp());
-            }
-        });
-        return difference;
+                            final PlayerOpStatusChangeEvent opStatusChangeEvent =
+                                    new PlayerOpStatusChangeEvent(player, wasOp, player.isOp(), true);
+                            Bukkit.getPluginManager().callEvent(opStatusChangeEvent);
+                        });
+                    },
+                    20L, // initial delay
+                    20L  // period
+            );
+        }
     }
 
     @NotNull
@@ -139,4 +143,4 @@ public class NameColorPlugin extends JavaPlugin {
         }
     }
 
-}
+} // <- THIS final brace was likely missing
