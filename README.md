@@ -1,7 +1,7 @@
 # PTJDNC
 Fully configurable playtime + joindate based namecolor plugin for 1.21+
 
-#SUPPORTS FOLIA
+# SUPPORTS FOLIA
 
 In order to get access to any given name color, both the joindate requirement (JD min.) as well as the playtime requirement (PT min.) have to be fulfilled.
 The playtime numbers here are measured in hours, whereas the joindate is either measured in days, or a certain date, where the player must have joined before it.
